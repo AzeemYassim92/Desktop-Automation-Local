@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -42,6 +43,7 @@ public class MainViewModel : ViewModelBase, IDisposable
         SetRegionStartCommand = new RelayCommand(SetRegionStart);
         SetRegionEndCommand = new RelayCommand(SetRegionEnd);
         CenterRegionOnCursorCommand = new RelayCommand(CenterRegionOnCursor);
+        TakeScreenshotCommand = new RelayCommand(TakeScreenshot);
         StartSamplingCommand = new RelayCommand(StartSampling);
         StopSamplingCommand = new RelayCommand(StopSampling);
         SaveSettingsCommand = new RelayCommand(SaveSettings);
@@ -77,6 +79,7 @@ public class MainViewModel : ViewModelBase, IDisposable
     public RelayCommand SetRegionStartCommand { get; }
     public RelayCommand SetRegionEndCommand { get; }
     public RelayCommand CenterRegionOnCursorCommand { get; }
+    public RelayCommand TakeScreenshotCommand { get; }
     public RelayCommand StartSamplingCommand { get; }
     public RelayCommand StopSamplingCommand { get; }
     public RelayCommand SaveSettingsCommand { get; }
@@ -161,6 +164,16 @@ public class MainViewModel : ViewModelBase, IDisposable
         Settings.Region.Y = y - (Settings.Region.Height / 2);
         AddLog($"Region centered on cursor at ({x}, {y}).");
         RefreshComputedState();
+    }
+
+    private void TakeScreenshot()
+    {
+        var filePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+            $"screenshot_{DateTime.Now:HHmmss}.png");
+
+        _colorSamplerService.SaveScreenshot(Settings.Region, filePath);
+        AddLog($"Screenshot saved: {filePath}");
     }
 
     private void StartSampling()
