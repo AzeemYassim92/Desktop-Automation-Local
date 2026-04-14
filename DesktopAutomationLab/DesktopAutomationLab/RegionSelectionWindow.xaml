@@ -1,0 +1,22 @@
+<Window x:Class="DesktopAutomationLab.RegionSelectionWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        Background="#35000000"
+        ShowInTaskbar="False"
+        Topmost="True"
+        Cursor="Cross"
+        Title="Select Region">
+    <Canvas x:Name="RootCanvas"
+            MouseLeftButtonDown="OnMouseLeftButtonDown"
+            MouseMove="OnMouseMove"
+            MouseLeftButtonUp="OnMouseLeftButtonUp">
+        <Rectangle x:Name="SelectionRectangle"
+                   Visibility="Collapsed"
+                   Stroke="#22D3EE"
+                   StrokeThickness="2"
+                   Fill="#3348CAE4" />
+    </Canvas>
+</Window>

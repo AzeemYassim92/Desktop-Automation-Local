@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -44,8 +45,10 @@ public class MainViewModel : ViewModelBase, IDisposable
         SetRegionEndCommand = new RelayCommand(SetRegionEnd);
         CenterRegionOnCursorCommand = new RelayCommand(CenterRegionOnCursor);
         SaveRegionScreenshotCommand = new RelayCommand(SaveRegionScreenshot);
+        SelectRegionAndCaptureCommand = new RelayCommand(SelectRegionAndCapture);
         StartSamplingCommand = new RelayCommand(StartSampling);
         StopSamplingCommand = new RelayCommand(StopSampling);
+        ExportSamplesCommand = new RelayCommand(ExportSamples);
         SaveSettingsCommand = new RelayCommand(SaveSettings);
         LoadSettingsCommand = new RelayCommand(LoadSettings);
 
@@ -68,7 +71,7 @@ public class MainViewModel : ViewModelBase, IDisposable
     public string RunningStateText => _isRunning ? "Running" : "Stopped";
 
     public string SettingsSummary =>
-        $"Hotkey: {HotkeyService.Describe(Settings.Hotkey)} | Region: X={Settings.Region.X}, Y={Settings.Region.Y}, W={Settings.Region.Width}, H={Settings.Region.Height} | Interval: {Settings.SampleIntervalMs}ms";
+        $"Hotkey: {HotkeyService.Describe(Settings.Hotkey)} | Region: X={Settings.Region.X}, Y={Settings.Region.Y}, W={Settings.Region.Width}, H={Settings.Region.Height} | Interval: {Settings.SampleIntervalMs}ms | Output: {Settings.ScreenshotOutputFolder}";
 
     public ObservableCollection<string> LogEntries { get; } = new();
     public ObservableCollection<string> RecentSamples { get; } = new();
@@ -80,8 +83,10 @@ public class MainViewModel : ViewModelBase, IDisposable
     public RelayCommand SetRegionEndCommand { get; }
     public RelayCommand CenterRegionOnCursorCommand { get; }
     public RelayCommand SaveRegionScreenshotCommand { get; }
+    public RelayCommand SelectRegionAndCaptureCommand { get; }
     public RelayCommand StartSamplingCommand { get; }
     public RelayCommand StopSamplingCommand { get; }
+    public RelayCommand ExportSamplesCommand { get; }
     public RelayCommand SaveSettingsCommand { get; }
     public RelayCommand LoadSettingsCommand { get; }
 
@@ -188,12 +193,42 @@ public class MainViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        var outputFolder = GetOutputFolder();
         var filePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+            outputFolder,
             $"region_screenshot_{DateTime.Now:yyyyMMdd_HHmmss}.png");
 
         _colorSamplerService.SaveScreenshot(Settings.Region, filePath);
         AddLog($"Screenshot saved: {filePath}");
+    }
+
+    private void SelectRegionAndCapture()
+        => _ = SelectRegionAndCaptureAsync();
+
+    private async Task SelectRegionAndCaptureAsync()
+    {
+        AddLog("Drag to select a region on screen.");
+        _window.WindowState = WindowState.Minimized;
+        await Task.Delay(150);
+
+        var selector = new RegionSelectionWindow();
+        var result = selector.ShowDialog();
+
+        _window.WindowState = WindowState.Normal;
+        _window.Activate();
+
+        if (result != true || selector.SelectedRegion is null)
+        {
+            AddLog("Region selection was cancelled.");
+            return;
+        }
+
+        Settings.Region = selector.SelectedRegion;
+        RefreshComputedState();
+        RaisePropertyChanged(nameof(Settings));
+        AddLog($"Selected region: X={Settings.Region.X}, Y={Settings.Region.Y}, W={Settings.Region.Width}, H={Settings.Region.Height}.");
+
+        SaveRegionScreenshot();
     }
 
     private void StartSampling()
@@ -229,6 +264,23 @@ public class MainViewModel : ViewModelBase, IDisposable
         _settingsService.Save(Settings, SettingsFilePath);
         AddLog($"Settings saved to {SettingsFilePath}.");
         RaiseStateProperties();
+    }
+
+    private void ExportSamples()
+    {
+        if (RecentSamples.Count == 0)
+        {
+            AddLog("No samples to export yet.");
+            return;
+        }
+
+        var outputFolder = GetOutputFolder();
+        var filePath = Path.Combine(
+            outputFolder,
+            $"sample_export_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+
+        File.WriteAllLines(filePath, RecentSamples.Reverse());
+        AddLog($"Sample list exported: {filePath}");
     }
 
     private void LoadSettings()
@@ -302,6 +354,18 @@ public class MainViewModel : ViewModelBase, IDisposable
 
         AddLog($"{actionName} requires a valid region (width and height must be greater than 0).");
         return false;
+    }
+
+    private string GetOutputFolder()
+    {
+        var configured = Settings.ScreenshotOutputFolder?.Trim();
+        var outputFolder = string.IsNullOrWhiteSpace(configured)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "DesktopAutomationLabCaptures")
+            : configured;
+
+        Directory.CreateDirectory(outputFolder);
+        Settings.ScreenshotOutputFolder = outputFolder;
+        return outputFolder;
     }
 
     private void RaiseStateProperties()
