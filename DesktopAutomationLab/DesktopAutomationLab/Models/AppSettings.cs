@@ -5,4 +5,7 @@ public class AppSettings
     public HotkeySettings Hotkey { get; set; } = new();
     public RegionDefinition Region { get; set; } = new();
     public int SampleIntervalMs { get; set; } = 300;
+    public string ScreenshotOutputFolder { get; set; } = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+        "DesktopAutomationLabCaptures");
 }

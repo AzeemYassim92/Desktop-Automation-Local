@@ -111,6 +111,9 @@
                                 <Button Padding="12,8" Margin="0,0,8,8" Content="Start Sampling" Command="{Binding StartSamplingCommand}" />
                                 <Button Padding="12,8" Margin="0,0,8,8" Content="Stop Sampling" Command="{Binding StopSamplingCommand}" />
                                 <Button Padding="12,8" Margin="0,0,8,8" Content="Center Region On Cursor" Command="{Binding CenterRegionOnCursorCommand}" />
+                                <Button Padding="12,8" Margin="0,0,8,8" Content="Save Region Screenshot" Command="{Binding SaveRegionScreenshotCommand}" />
+                                <Button Padding="12,8" Margin="0,0,8,8" Content="Drag Select & Save" Command="{Binding SelectRegionAndCaptureCommand}" />
+                                <Button Padding="12,8" Margin="0,0,8,8" Content="Export Samples" Command="{Binding ExportSamplesCommand}" />
                             </WrapPanel>
 
                             <TextBlock Text="Sample Interval (ms)" Foreground="#D1D5DB" />
@@ -204,6 +207,10 @@
 
                             <TextBlock Margin="0,18,0,4" Text="Settings File" Foreground="#D1D5DB" />
                             <TextBox Padding="8" Text="{Binding SettingsFilePath}" IsReadOnly="True" />
+
+                            <TextBlock Margin="0,18,0,4" Text="Capture Output Folder" Foreground="#D1D5DB" />
+                            <TextBox Padding="8"
+                                     Text="{Binding Settings.ScreenshotOutputFolder, UpdateSourceTrigger=PropertyChanged}" />
                         </StackPanel>
                     </Border>
 
