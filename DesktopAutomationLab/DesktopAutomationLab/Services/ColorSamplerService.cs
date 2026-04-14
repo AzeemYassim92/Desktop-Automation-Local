@@ -28,4 +28,17 @@ public class ColorSamplerService
         var centerY = region.Y + Math.Max(region.Height / 2, 0);
         return SampleAt(centerX, centerY);
     }
+
+    public void SaveScreenshot(RegionDefinition region, string filePath)
+    {
+        var width = Math.Max(region.Width, 1);
+        var height = Math.Max(region.Height, 1);
+
+        using var bitmap = new Bitmap(width, height);
+        using var graphics = Graphics.FromImage(bitmap);
+
+        graphics.CopyFromScreen(region.X, region.Y, 0, 0, new Size(width, height));
+
+        bitmap.Save(filePath, System.Drawing.Imaging.ImageFormat.Png);
+    }
 }
