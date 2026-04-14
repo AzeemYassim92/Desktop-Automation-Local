@@ -193,11 +193,7 @@ public class MainViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        if (!TryGetOutputFolder(out var outputFolder))
-        {
-            return;
-        }
-
+        var outputFolder = GetOutputFolder();
         var filePath = Path.Combine(
             outputFolder,
             $"region_screenshot_{DateTime.Now:yyyyMMdd_HHmmss}.png");
@@ -243,6 +239,12 @@ public class MainViewModel : ViewModelBase, IDisposable
         }
 
         var interval = Math.Max(Settings.SampleIntervalMs, 50);
+        if (Settings.SampleIntervalMs != interval)
+        {
+            Settings.SampleIntervalMs = interval;
+            AddLog("Sample interval was below 50ms and has been clamped.");
+        }
+
         _samplerTimer.Interval = TimeSpan.FromMilliseconds(interval);
         _samplerTimer.Start();
         SamplerStatus = $"Sampling every {interval} ms.";
@@ -272,11 +274,7 @@ public class MainViewModel : ViewModelBase, IDisposable
             return;
         }
 
-        if (!TryGetOutputFolder(out var outputFolder))
-        {
-            return;
-        }
-
+        var outputFolder = GetOutputFolder();
         var filePath = Path.Combine(
             outputFolder,
             $"sample_export_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
@@ -358,43 +356,16 @@ public class MainViewModel : ViewModelBase, IDisposable
         return false;
     }
 
-    private void ValidateSettings()
-    {
-        Settings.SampleIntervalMs = Math.Max(Settings.SampleIntervalMs, 50);
-        Settings.Region.Width = Math.Max(Settings.Region.Width, 1);
-        Settings.Region.Height = Math.Max(Settings.Region.Height, 1);
-
-        if (string.IsNullOrWhiteSpace(Settings.Hotkey.KeyText))
-        {
-            Settings.Hotkey.KeyText = "F8";
-        }
-
-        Settings.ScreenshotOutputFolder = string.IsNullOrWhiteSpace(Settings.ScreenshotOutputFolder)
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "DesktopAutomationLabCaptures")
-            : Settings.ScreenshotOutputFolder.Trim();
-    }
-
-    private bool TryGetOutputFolder(out string outputFolder)
+    private string GetOutputFolder()
     {
         var configured = Settings.ScreenshotOutputFolder?.Trim();
-        outputFolder = string.IsNullOrWhiteSpace(configured)
+        var outputFolder = string.IsNullOrWhiteSpace(configured)
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "DesktopAutomationLabCaptures")
             : configured;
 
-        try
-        {
-            outputFolder = Path.GetFullPath(outputFolder);
-            Directory.CreateDirectory(outputFolder);
-            Settings.ScreenshotOutputFolder = outputFolder;
-            RaisePropertyChanged(nameof(Settings));
-            RaisePropertyChanged(nameof(SettingsSummary));
-            return true;
-        }
-        catch (Exception ex)
-        {
-            AddLog($"Output folder path is invalid or inaccessible: {ex.Message}");
-            return false;
-        }
+        Directory.CreateDirectory(outputFolder);
+        Settings.ScreenshotOutputFolder = outputFolder;
+        return outputFolder;
     }
 
     private void RaiseStateProperties()

@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <UseWindowsForms>true</UseWindowsForms>
+	<UseSystemDrawing>true</UseSystemDrawing>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <AssemblyName>DesktopAutomationLab</AssemblyName>
     <RootNamespace>DesktopAutomationLab</RootNamespace>
@@ -17,5 +17,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+	</ItemGroup>
 
 </Project>
