@@ -166,6 +166,12 @@ public class MainViewModel : ViewModelBase, IDisposable
     private void StartSampling()
     {
         var interval = Math.Max(Settings.SampleIntervalMs, 50);
+        if (Settings.SampleIntervalMs != interval)
+        {
+            Settings.SampleIntervalMs = interval;
+            AddLog("Sample interval was below 50ms and has been clamped.");
+        }
+
         _samplerTimer.Interval = TimeSpan.FromMilliseconds(interval);
         _samplerTimer.Start();
         SamplerStatus = $"Sampling every {interval} ms.";
@@ -190,6 +196,7 @@ public class MainViewModel : ViewModelBase, IDisposable
     private void LoadSettings()
     {
         Settings = _settingsService.Load(SettingsFilePath);
+        ValidateSettings();
         AddLog($"Settings loaded from {SettingsFilePath}.");
         RefreshComputedState();
         RaisePropertyChanged(nameof(Settings));
@@ -222,6 +229,29 @@ public class MainViewModel : ViewModelBase, IDisposable
     {
         RegionText = $"Region: X={Settings.Region.X}, Y={Settings.Region.Y}, W={Settings.Region.Width}, H={Settings.Region.Height}";
         RaiseStateProperties();
+    }
+
+    private void ValidateSettings()
+    {
+        var originalInterval = Settings.SampleIntervalMs;
+        Settings.SampleIntervalMs = Math.Max(Settings.SampleIntervalMs, 50);
+        if (originalInterval != Settings.SampleIntervalMs)
+        {
+            AddLog($"Sample interval adjusted from {originalInterval}ms to {Settings.SampleIntervalMs}ms.");
+        }
+
+        var originalWidth = Settings.Region.Width;
+        var originalHeight = Settings.Region.Height;
+        Settings.Region.Width = Math.Max(Settings.Region.Width, 1);
+        Settings.Region.Height = Math.Max(Settings.Region.Height, 1);
+        if (originalWidth != Settings.Region.Width || originalHeight != Settings.Region.Height)
+        {
+            AddLog("Region size adjusted to minimum 1x1.");
+        }
+
+        Settings.Hotkey.KeyText = string.IsNullOrWhiteSpace(Settings.Hotkey.KeyText)
+            ? "F8"
+            : Settings.Hotkey.KeyText.Trim();
     }
 
     private void RaiseStateProperties()
