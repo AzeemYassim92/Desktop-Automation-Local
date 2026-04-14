@@ -204,7 +204,7 @@
                             </WrapPanel>
 
                             <TextBlock Margin="0,18,0,4" Text="Settings File" Foreground="#D1D5DB" />
-                            <TextBox Padding="8" Text="{Binding SettingsFilePath}" IsReadOnly="True" />
+                            <TextBox Padding="8" Text="{Binding SettingsFilePath, Mode=OneWay}" IsReadOnly="True" />
                         </StackPanel>
                     </Border>
 

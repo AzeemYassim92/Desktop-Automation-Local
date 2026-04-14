@@ -204,6 +204,12 @@ public class MainViewModel : ViewModelBase, IDisposable
         }
 
         var interval = Math.Max(Settings.SampleIntervalMs, 50);
+        if (Settings.SampleIntervalMs != interval)
+        {
+            Settings.SampleIntervalMs = interval;
+            AddLog("Sample interval was below 50ms and has been clamped.");
+        }
+
         _samplerTimer.Interval = TimeSpan.FromMilliseconds(interval);
         _samplerTimer.Start();
         SamplerStatus = $"Sampling every {interval} ms.";
@@ -228,6 +234,7 @@ public class MainViewModel : ViewModelBase, IDisposable
     private void LoadSettings()
     {
         Settings = _settingsService.Load(SettingsFilePath);
+        ValidateSettings();
         AddLog($"Settings loaded from {SettingsFilePath}.");
         RefreshComputedState();
         RaisePropertyChanged(nameof(Settings));
