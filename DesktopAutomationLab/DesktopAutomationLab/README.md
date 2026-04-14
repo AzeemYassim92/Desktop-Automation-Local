@@ -6,6 +6,7 @@ A small .NET 8 WPF desktop application intended for safe automation learning:
 - cursor capture
 - region definition
 - live screen color sampling
+- region screenshot capture to PNG
 - JSON settings persistence
 - structured logs
 

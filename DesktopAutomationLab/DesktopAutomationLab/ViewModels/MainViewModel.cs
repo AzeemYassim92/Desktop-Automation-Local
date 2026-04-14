@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -42,6 +43,7 @@ public class MainViewModel : ViewModelBase, IDisposable
         SetRegionStartCommand = new RelayCommand(SetRegionStart);
         SetRegionEndCommand = new RelayCommand(SetRegionEnd);
         CenterRegionOnCursorCommand = new RelayCommand(CenterRegionOnCursor);
+        SaveRegionScreenshotCommand = new RelayCommand(SaveRegionScreenshot);
         StartSamplingCommand = new RelayCommand(StartSampling);
         StopSamplingCommand = new RelayCommand(StopSampling);
         SaveSettingsCommand = new RelayCommand(SaveSettings);
@@ -77,6 +79,7 @@ public class MainViewModel : ViewModelBase, IDisposable
     public RelayCommand SetRegionStartCommand { get; }
     public RelayCommand SetRegionEndCommand { get; }
     public RelayCommand CenterRegionOnCursorCommand { get; }
+    public RelayCommand SaveRegionScreenshotCommand { get; }
     public RelayCommand StartSamplingCommand { get; }
     public RelayCommand StopSamplingCommand { get; }
     public RelayCommand SaveSettingsCommand { get; }
@@ -120,7 +123,12 @@ public class MainViewModel : ViewModelBase, IDisposable
     }
 
     private void CaptureCursor()
+        => _ = CaptureCursorDelayedAsync();
+
+    private async Task CaptureCursorDelayedAsync()
     {
+        AddLog("Capture cursor requested. You have 3 seconds.");
+        await MinimizeAndDelayAsync();
         var (x, y) = _cursorTrackingService.GetCursorPosition();
         CursorText = $"Cursor: X={x}, Y={y}";
         AddLog($"Captured cursor at ({x}, {y}).");
@@ -128,7 +136,12 @@ public class MainViewModel : ViewModelBase, IDisposable
     }
 
     private void SetRegionStart()
+        => _ = SetRegionStartDelayedAsync();
+
+    private async Task SetRegionStartDelayedAsync()
     {
+        AddLog("Set region start requested. Move your cursor to the start point (3 seconds).");
+        await MinimizeAndDelayAsync();
         var (x, y) = _cursorTrackingService.GetCursorPosition();
         _regionStartX = x;
         _regionStartY = y;
@@ -137,6 +150,9 @@ public class MainViewModel : ViewModelBase, IDisposable
     }
 
     private void SetRegionEnd()
+        => _ = SetRegionEndDelayedAsync();
+
+    private async Task SetRegionEndDelayedAsync()
     {
         if (!_hasRegionStart)
         {
@@ -144,6 +160,8 @@ public class MainViewModel : ViewModelBase, IDisposable
             return;
         }
 
+        AddLog("Set region end requested. Move your cursor to the end point (3 seconds).");
+        await MinimizeAndDelayAsync();
         var (x, y) = _cursorTrackingService.GetCursorPosition();
         Settings.Region.X = Math.Min(_regionStartX, x);
         Settings.Region.Y = Math.Min(_regionStartY, y);
@@ -163,8 +181,28 @@ public class MainViewModel : ViewModelBase, IDisposable
         RefreshComputedState();
     }
 
+    private void SaveRegionScreenshot()
+    {
+        if (!HasValidRegion("Screenshot"))
+        {
+            return;
+        }
+
+        var filePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+            $"region_screenshot_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+
+        _colorSamplerService.SaveScreenshot(Settings.Region, filePath);
+        AddLog($"Screenshot saved: {filePath}");
+    }
+
     private void StartSampling()
     {
+        if (!HasValidRegion("Sampling"))
+        {
+            return;
+        }
+
         var interval = Math.Max(Settings.SampleIntervalMs, 50);
         _samplerTimer.Interval = TimeSpan.FromMilliseconds(interval);
         _samplerTimer.Start();
@@ -204,6 +242,12 @@ public class MainViewModel : ViewModelBase, IDisposable
 
     private void OnSamplerTick(object? sender, EventArgs e)
     {
+        if (!HasValidRegion("Sampling"))
+        {
+            StopSampling();
+            return;
+        }
+
         var sample = _colorSamplerService.SampleRegionCenter(Settings.Region);
         CurrentSample = sample;
 
@@ -222,6 +266,35 @@ public class MainViewModel : ViewModelBase, IDisposable
     {
         RegionText = $"Region: X={Settings.Region.X}, Y={Settings.Region.Y}, W={Settings.Region.Width}, H={Settings.Region.Height}";
         RaiseStateProperties();
+    }
+
+    private async Task MinimizeAndDelayAsync()
+    {
+        var restoreState = _window.WindowState == WindowState.Minimized
+            ? WindowState.Normal
+            : _window.WindowState;
+
+        _window.WindowState = WindowState.Minimized;
+        try
+        {
+            await Task.Delay(3000);
+        }
+        finally
+        {
+            _window.WindowState = restoreState;
+            _window.Activate();
+        }
+    }
+
+    private bool HasValidRegion(string actionName)
+    {
+        if (Settings.Region.Width > 0 && Settings.Region.Height > 0)
+        {
+            return true;
+        }
+
+        AddLog($"{actionName} requires a valid region (width and height must be greater than 0).");
+        return false;
     }
 
     private void RaiseStateProperties()
