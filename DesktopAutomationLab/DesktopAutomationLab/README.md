@@ -23,6 +23,19 @@ A small .NET 8 WPF desktop application intended for safe automation learning:
 - UI framework: WPF
 - This project is intended to be built on Windows.
 - I could not run a local `dotnet build` in this environment because the .NET SDK is not installed here.
+- Settings loading now safely falls back to defaults if JSON is invalid or unreadable.
+- Settings values are normalized on load (minimum sample interval and valid region size).
+
+## Foundation checklist before feature work
+
+Use this quick pass before adding overlays, timers, or window targeting:
+
+1. Confirm startup works (window appears, no first-run exceptions).
+2. Register and trigger hotkey (see running state and log line update).
+3. Capture cursor and define a region start/end.
+4. Start sampling and verify color tile + recent samples update.
+5. Save settings, restart app, then load settings and verify values persist.
+6. Corrupt `appsettings.json` manually once; relaunch and verify app still starts with defaults.
 
 ## Project layout
 

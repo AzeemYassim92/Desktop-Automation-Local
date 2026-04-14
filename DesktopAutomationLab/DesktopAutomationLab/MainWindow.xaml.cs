@@ -25,4 +25,9 @@ public partial class MainWindow : Window
     {
         _viewModel.Dispose();
     }
+
+    private void TextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+
+    }
 }
