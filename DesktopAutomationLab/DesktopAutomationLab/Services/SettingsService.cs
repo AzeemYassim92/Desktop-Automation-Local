@@ -34,7 +34,14 @@ public class SettingsService
             return new AppSettings();
         }
 
-        var json = File.ReadAllText(path);
-        return JsonSerializer.Deserialize<AppSettings>(json, _options) ?? new AppSettings();
+        try
+        {
+            var json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<AppSettings>(json, _options) ?? new AppSettings();
+        }
+        catch
+        {
+            return new AppSettings();
+        }
     }
 }
